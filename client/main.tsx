@@ -15,6 +15,7 @@ function App() {
     const [filter, setFilter] = useState('');
     const [notice, setNotice] = useState('');
     const [clearing, setClearing] = useState(false);
+    const [sidebarVersion, setSidebarVersion] = useState(0);
     const { snapshot, connected, error, setError, resetHistory } = useRequestHistory(paused);
     const receiver = `${location.origin}${API_ROUTES.receiver}`;
     //#endregion
@@ -29,7 +30,7 @@ function App() {
     const selected = snapshot.requests.find((request) => request.id === selectedId) ?? snapshot.requests[0];
     const visible = useMemo(() => {
         const query = filter.toLowerCase().trim();
-        return snapshot.requests.filter((request) => `${request.method} ${request.url} ${request.contentType}`.toLowerCase().includes(query));
+        return snapshot.requests.filter((request) => `${request.id} ${request.method} ${request.url} ${request.contentType}`.toLowerCase().includes(query.replace(/^#/, '')));
     }, [snapshot.requests, filter]);
     //#endregion
 
@@ -49,6 +50,7 @@ function App() {
             const response = await fetch(API_ROUTES.requests, { method: 'DELETE' });
             if (!response.ok) throw new Error('Unable to clear history');
             resetHistory();
+            setSidebarVersion((value) => value + 1);
             setSelectedId(null);
             setNotice('History cleared');
         } catch (cause) {
@@ -71,7 +73,7 @@ function App() {
             )}
             {paused && <div className="pause-banner">Live updates paused. Requests are still being captured. Resume to synchronize.</div>}
             <div className="workspace">
-                <RequestSidebar snapshot={snapshot} visible={visible} selectedId={selected?.id} filter={filter} onFilter={setFilter} onSelect={setSelectedId} />
+                <RequestSidebar key={sidebarVersion} snapshot={snapshot} visible={visible} selectedId={selected?.id} filter={filter} onFilter={setFilter} onSelect={setSelectedId} />
                 <RequestDetails selected={selected} receiver={receiver} copy={copy} />
             </div>
             <footer className="app-footer">
