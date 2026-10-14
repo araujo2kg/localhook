@@ -26,8 +26,8 @@ export function RequestSidebar({ snapshot, visible, selectedId, filter, onFilter
                 <input aria-label="Filter requests" placeholder="Filter by method, URL, type…" value={filter} onChange={(event) => onFilter(event.target.value)} />
             </div>
             <div className="request-list">
-                {visible.map((request) => (
-                    <RequestRow key={request.id} request={request} selected={selectedId === request.id} onClick={() => onSelect(request.id)} />
+                {visible.map((request, index) => (
+                    <RequestRow key={request.id} request={request} striped={index % 2 === 1} selected={selectedId === request.id} onClick={() => onSelect(request.id)} />
                 ))}
                 {!visible.length && (
                     <div className="list-empty">

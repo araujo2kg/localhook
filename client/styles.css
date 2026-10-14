@@ -230,7 +230,13 @@ h1 {
     border-bottom-color: #353535;
     padding: 14px 12px;
     border-radius: 5px;
-    background: transparent;
+    background: #252525;
+}
+.request-row.striped {
+    background: #303030;
+}
+.request-row:hover {
+    background: #3a3a3a;
 }
 .request-row.selected {
     background: #303b49;
