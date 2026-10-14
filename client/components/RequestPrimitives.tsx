@@ -6,12 +6,21 @@ export function Method({ method }: { method: string }) {
     return <span className={`method method-${method.toLowerCase()}`}>{method}</span>;
 }
 
+export function RequestIdentifier({ id }: { id: string }) {
+    return (
+        <code className="row-identifier" title={`Request ID: ${id}`} aria-label={`Request ID: ${id}`}>
+            #{id.slice(0, 8)}
+        </code>
+    );
+}
+
 export function RequestRow({ request, selected, striped = false, onClick, ...events }: { request: CapturedRequest; selected: boolean; striped?: boolean; onClick: () => void } & Pick<ButtonHTMLAttributes<HTMLButtonElement>, 'onPointerEnter' | 'onPointerLeave' | 'onFocus' | 'onBlur'>) {
     const preview = bodyPreview(request);
     return (
         <button className={`request-row ${striped ? 'striped' : ''} ${selected ? 'selected' : ''}`} onClick={onClick} aria-pressed={selected} {...events}>
             <div className="row-top">
                 <Method method={request.method} />
+                <RequestIdentifier id={request.id} />
                 <time dateTime={request.timestamp} title={new Date(request.timestamp).toLocaleString()}>
                     {formatTime(request.timestamp)}
                 </time>

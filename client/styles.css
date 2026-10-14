@@ -270,6 +270,12 @@ h1 {
     gap: 10px;
     flex-shrink: 0;
 }
+.row-identifier {
+    color: #bdcadd;
+    font-size: 10px;
+    font-weight: 400;
+    white-space: nowrap;
+}
 .preview-balloon::before {
     content: '';
     position: absolute;
@@ -343,6 +349,7 @@ h1 {
     font-size: 10px;
 }
 .row-top time {
+    margin-left: auto;
     color: #d0d0d0;
     font-size: 12px;
     font-weight: 500;

@@ -2,7 +2,7 @@ import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from '
 import { createPortal } from 'react-dom';
 import type { CapturedRequest } from '../../shared/types';
 import { formatTime, JSON_INDENT_SPACES } from '../format';
-import { Method } from './RequestPrimitives';
+import { Method, RequestIdentifier } from './RequestPrimitives';
 import type { PreviewPosition } from '../hooks/useRequestPreview';
 
 interface Props {
@@ -45,6 +45,7 @@ export function RequestHoverPreview({ request, position, onEnter, onLeave, onClo
             </header>
             <div className="preview-request">
                 <Method method={request.method} />
+                <RequestIdentifier id={request.id} />
                 <strong title={request.url}>{request.url}</strong>
                 <time dateTime={request.timestamp}>{formatTime(request.timestamp)}</time>
             </div>

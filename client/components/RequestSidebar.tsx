@@ -96,7 +96,7 @@ export function RequestSidebar({ snapshot, visible, selectedId, filter, onFilter
             </div>
             <div className="search-wrap">
                 <span aria-hidden="true">⌕</span>
-                <input aria-label="Filter requests" placeholder="Filter by method, URL, type…" value={filter} onChange={(event) => onFilter(event.target.value)} />
+                <input aria-label="Filter requests" placeholder="Filter by ID, method, URL, type…" value={filter} onChange={(event) => onFilter(event.target.value)} />
             </div>
             <div className="sidebar-tools">
                 <button className="add-divider" title="Mark a boundary here; new requests will appear above it" onClick={() => setDividers((current) => [{ id: crypto.randomUUID(), beforeId: snapshot.requests[0]?.id ?? null, label: '', color: DIVIDER_COLORS[0].value }, ...current])}>

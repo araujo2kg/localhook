@@ -30,7 +30,7 @@ function App() {
     const selected = snapshot.requests.find((request) => request.id === selectedId) ?? snapshot.requests[0];
     const visible = useMemo(() => {
         const query = filter.toLowerCase().trim();
-        return snapshot.requests.filter((request) => `${request.method} ${request.url} ${request.contentType}`.toLowerCase().includes(query));
+        return snapshot.requests.filter((request) => `${request.id} ${request.method} ${request.url} ${request.contentType}`.toLowerCase().includes(query.replace(/^#/, '')));
     }, [snapshot.requests, filter]);
     //#endregion
 
