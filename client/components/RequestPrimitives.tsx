@@ -10,7 +10,9 @@ export function RequestRow({ request, selected, striped = false, onClick }: { re
         <button className={`request-row ${striped ? 'striped' : ''} ${selected ? 'selected' : ''}`} onClick={onClick} aria-pressed={selected}>
             <div className="row-top">
                 <Method method={request.method} />
-                <time dateTime={request.timestamp}>{formatTime(request.timestamp)}</time>
+                <time dateTime={request.timestamp} title={new Date(request.timestamp).toLocaleString()}>
+                    {formatTime(request.timestamp)}
+                </time>
             </div>
             <div className="row-path" title={request.url}>
                 {request.url}
