@@ -1,12 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import express, { type ErrorRequestHandler, type Response } from 'express';
 import type { CapturedRequest, Snapshot } from '../shared/types';
-const API_ROUTES = { receiver: '/webhook', requests: '/api/requests', events: '/api/events' } as const;
-const CAPTURE_METHODS = ['POST', 'PUT', 'PATCH'] as const;
-const DEFAULT_BODY_LIMIT = '1mb';
-const HISTORY_CAPACITY = 500;
-const LOOPBACK_HOST = '127.0.0.1';
-const REFRESH_EVENT = 'refresh';
+import { API_ROUTES, CAPTURE_METHODS, DEFAULT_BODY_LIMIT, HISTORY_CAPACITY, LOOPBACK_HOST, REFRESH_EVENT } from '../shared/constants';
 
 const BROADCAST_DELAY_MS = 80;
 const SSE_RETRY_MS = 1_500;

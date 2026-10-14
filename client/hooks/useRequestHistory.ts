@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Snapshot } from '../../shared/types';
-const API_ROUTES = { receiver: '/webhook', requests: '/api/requests', events: '/api/events' } as const;
-const REFRESH_EVENT = 'refresh';
+import { API_ROUTES, REFRESH_EVENT } from '../../shared/constants';
 import { EMPTY_SNAPSHOT, HISTORY_RETRY_MS } from '../constants';
 
 export function useRequestHistory(paused: boolean) {

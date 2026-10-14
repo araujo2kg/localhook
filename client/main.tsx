@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-const API_ROUTES = { receiver: '/webhook', requests: '/api/requests', events: '/api/events' } as const;
-const CAPTURE_METHODS = ['POST', 'PUT', 'PATCH'] as const;
-const LOOPBACK_HOST = '127.0.0.1';
+import { API_ROUTES, CAPTURE_METHODS, LOOPBACK_HOST } from '../shared/constants';
 import { NOTICE_DURATION_MS } from './constants';
 import { DashboardHeader } from './components/DashboardHeader';
 import { RequestSidebar } from './components/RequestSidebar';

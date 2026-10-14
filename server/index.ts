@@ -1,9 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { createApp } from './app';
-const API_ROUTES = { receiver: '/webhook', requests: '/api/requests', events: '/api/events' } as const;
-const LOOPBACK_HOST = '127.0.0.1';
-const DEFAULT_PORT = 17381;
-const DEFAULT_BODY_LIMIT = '1mb';
+import { API_ROUTES, LOOPBACK_HOST, DEFAULT_PORT, DEFAULT_BODY_LIMIT } from '../shared/constants';
 
 const port = Number(process.env.PORT ?? DEFAULT_PORT);
 if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('PORT must be an integer from 1 to 65535');

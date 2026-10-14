@@ -1,5 +1,5 @@
 import type { Snapshot } from '../shared/types';
-const HISTORY_CAPACITY = 500;
+import { HISTORY_CAPACITY } from '../shared/constants';
 
 export const EMPTY_SNAPSHOT: Snapshot = { requests: [], total: 0, capacity: HISTORY_CAPACITY };
 export const HISTORY_RETRY_MS = 10_000;
