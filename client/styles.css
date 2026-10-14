@@ -276,11 +276,27 @@ h1 {
     border-color: #5c4b70;
 }
 .row-path {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     font-size: 13px;
     margin: 10px 0 9px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+.row-path > span {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.row-preview {
+    max-width: 45%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #bed8f3;
+    font-size: 12px;
+    font-weight: 400;
 }
 .row-bottom {
     color: #929292;

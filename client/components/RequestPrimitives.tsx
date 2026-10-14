@@ -1,11 +1,12 @@
 import type { CapturedRequest } from '../../shared/types';
-import { formatBytes, formatTime } from '../format';
+import { bodyPreview, formatBytes, formatTime } from '../format';
 
 export function Method({ method }: { method: string }) {
     return <span className={`method method-${method.toLowerCase()}`}>{method}</span>;
 }
 
 export function RequestRow({ request, selected, striped = false, onClick }: { request: CapturedRequest; selected: boolean; striped?: boolean; onClick: () => void }) {
+    const preview = bodyPreview(request);
     return (
         <button className={`request-row ${striped ? 'striped' : ''} ${selected ? 'selected' : ''}`} onClick={onClick} aria-pressed={selected}>
             <div className="row-top">
@@ -15,7 +16,12 @@ export function RequestRow({ request, selected, striped = false, onClick }: { re
                 </time>
             </div>
             <div className="row-path" title={request.url}>
-                {request.url}
+                <span>{request.url}</span>
+                {preview !== undefined && (
+                    <code className="row-preview" title={`Body: ${preview}`}>
+                        {preview}
+                    </code>
+                )}
             </div>
             <div className="row-bottom">
                 <span>{request.contentType.split(';')[0] || 'No content type'}</span>
