@@ -1,6 +1,8 @@
 import { Fragment, useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { CapturedRequest, Snapshot } from '../../shared/types';
 import { RequestRow } from './RequestPrimitives';
+import { RequestHoverPreview } from './RequestHoverPreview';
+import { useRequestPreview } from '../hooks/useRequestPreview';
 
 const DIVIDER_COLORS = [
     { name: 'Blue', value: '#80b7f1' },
@@ -65,6 +67,8 @@ interface Props {
 
 export function RequestSidebar({ snapshot, visible, selectedId, filter, onFilter, onSelect }: Props) {
     const [dividers, setDividers] = useState<Divider[]>([]);
+    const { preview, start, leave, keepOpen, dismiss } = useRequestPreview(visible.map((request) => request.id).join(','), selectedId);
+    const previewRequest = preview && visible.find((request) => request.id === preview.id);
     const previousTotal = useRef(snapshot.total);
     useEffect(() => {
         const ids = new Set(snapshot.requests.map((request) => request.id));
@@ -103,7 +107,25 @@ export function RequestSidebar({ snapshot, visible, selectedId, filter, onFilter
                 {snapshot.requests.map((request) => (
                     <Fragment key={request.id}>
                         {renderDividers(request.id)}
-                        {visibleIndices.has(request.id) && <RequestRow request={request} striped={visibleIndices.get(request.id)! % 2 === 1} selected={selectedId === request.id} onClick={() => onSelect(request.id)} />}
+                        {visibleIndices.has(request.id) && (
+                            <RequestRow
+                                request={request}
+                                striped={visibleIndices.get(request.id)! % 2 === 1}
+                                selected={selectedId === request.id}
+                                onClick={() => {
+                                    dismiss();
+                                    onSelect(request.id);
+                                }}
+                                onPointerEnter={(event) => {
+                                    if (event.pointerType === 'mouse') start(request.id, event.currentTarget);
+                                }}
+                                onPointerLeave={leave}
+                                onFocus={(event) => {
+                                    if (event.currentTarget.matches(':focus-visible')) start(request.id, event.currentTarget);
+                                }}
+                                onBlur={leave}
+                            />
+                        )}
                     </Fragment>
                 ))}
                 {renderDividers(null)}
@@ -121,6 +143,7 @@ export function RequestSidebar({ snapshot, visible, selectedId, filter, onFilter
                 <span>{snapshot.total.toLocaleString()} captured</span>
                 <span>Latest {snapshot.capacity}</span>
             </footer>
+            {preview && previewRequest && <RequestHoverPreview request={previewRequest} position={preview} onEnter={keepOpen} onLeave={leave} onClose={dismiss} />}
         </aside>
     );
 }

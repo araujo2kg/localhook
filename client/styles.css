@@ -250,6 +250,98 @@ h1 {
     justify-content: space-between;
     gap: 10px;
 }
+.request-hover-preview {
+    position: fixed;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    padding: 14px;
+    border: 1px solid #526b86;
+    border-top: 2px solid var(--accent);
+    border-radius: 8px;
+    background: #252c35;
+    box-shadow: 0 12px 36px #0008;
+}
+.preview-heading,
+.preview-request,
+.request-hover-preview footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+.preview-balloon::before {
+    content: '';
+    position: absolute;
+    top: var(--pointer-top);
+    left: -7px;
+    width: 12px;
+    height: 12px;
+    background: #252c35;
+    border-left: 1px solid #526b86;
+    border-bottom: 1px solid #526b86;
+    transform: translateY(-50%) rotate(45deg);
+}
+.preview-heading {
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+.preview-heading .eyebrow {
+    color: #adc9e9;
+}
+.preview-heading button {
+    padding: 0 6px;
+    background: transparent;
+    border: 0;
+    font-size: 20px;
+    line-height: 1;
+    color: #bccadb;
+}
+.preview-request {
+    margin-bottom: 12px;
+    font-size: 12px;
+}
+.preview-request strong {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.preview-request time {
+    color: #c3cfdd;
+    font-variant-numeric: tabular-nums;
+}
+.preview-body {
+    min-height: 0;
+    overflow: auto;
+    padding: 14px;
+    border: 1px solid #3b4654;
+    border-radius: 5px;
+    background: #20252c;
+    color: #c6d9ea;
+}
+.preview-body:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+.preview-body pre {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+.preview-body p {
+    font-size: 12px;
+    color: #b6c0cd;
+}
+.request-hover-preview footer {
+    justify-content: space-between;
+    margin-top: 12px;
+    color: #b6c0cd;
+    font-size: 10px;
+}
 .row-top time {
     color: #d0d0d0;
     font-size: 12px;

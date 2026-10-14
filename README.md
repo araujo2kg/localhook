@@ -64,6 +64,7 @@ curl -X POST http://127.0.0.1:17381/webhook -H 'Content-Type: text/plain' -d 'He
 - The latest **500** requests are retained, newest first; older entries are evicted.
 - Headers, repeated query parameters, timestamp, byte size, content type, and remote address are captured.
 - Valid JSON can be formatted; malformed JSON, text, forms, and empty bodies remain inspectable.
+- Hover over a request for 700 ms to preview its body without changing the open request.
 - **Add divider** marks a boundary above the latest captured request; future requests appear above it. Click a divider to rename it, choose an accent color, or remove it. Dividers live only in the current dashboard tab and disappear on reload, history clear, or when their boundary request is evicted.
 - The dashboard shows a UTF-8 preview. The API includes `bodyBase64` to preserve original bytes for binary payloads.
 - Live updates use batched SSE notifications and fetch a bounded snapshot. Reconnection resynchronizes history.

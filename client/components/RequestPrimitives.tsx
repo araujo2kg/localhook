@@ -1,3 +1,4 @@
+import type { ButtonHTMLAttributes } from 'react';
 import type { CapturedRequest } from '../../shared/types';
 import { bodyPreview, formatBytes, formatTime } from '../format';
 
@@ -5,10 +6,10 @@ export function Method({ method }: { method: string }) {
     return <span className={`method method-${method.toLowerCase()}`}>{method}</span>;
 }
 
-export function RequestRow({ request, selected, striped = false, onClick }: { request: CapturedRequest; selected: boolean; striped?: boolean; onClick: () => void }) {
+export function RequestRow({ request, selected, striped = false, onClick, ...events }: { request: CapturedRequest; selected: boolean; striped?: boolean; onClick: () => void } & Pick<ButtonHTMLAttributes<HTMLButtonElement>, 'onPointerEnter' | 'onPointerLeave' | 'onFocus' | 'onBlur'>) {
     const preview = bodyPreview(request);
     return (
-        <button className={`request-row ${striped ? 'striped' : ''} ${selected ? 'selected' : ''}`} onClick={onClick} aria-pressed={selected}>
+        <button className={`request-row ${striped ? 'striped' : ''} ${selected ? 'selected' : ''}`} onClick={onClick} aria-pressed={selected} {...events}>
             <div className="row-top">
                 <Method method={request.method} />
                 <time dateTime={request.timestamp} title={new Date(request.timestamp).toLocaleString()}>
