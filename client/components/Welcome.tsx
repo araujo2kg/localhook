@@ -1,7 +1,13 @@
+import { useState } from 'react';
 import type { CopyText } from '../constants';
 
 export function Welcome({ receiver, copy }: { receiver: string; copy: CopyText }) {
-    const example = `curl -X POST ${receiver} -H "Content-Type: application/json" -d '{"hello":"LocalHook"}'`;
+    const [shell, setShell] = useState<'powershell' | 'curl'>(() => (navigator.userAgent.includes('Windows') ? 'powershell' : 'curl'));
+    const examples = {
+        powershell: `Invoke-RestMethod -Method Post -Uri '${receiver}' -ContentType 'application/json' -Body '{"hello":"LocalHook"}'`,
+        curl: `curl -X POST '${receiver}' -H 'Content-Type: application/json' -d '{"hello":"LocalHook"}'`,
+    };
+    const example = examples[shell];
     return (
         <div className="welcome">
             <div className="welcome-symbol" aria-hidden="true">{`{ }`}</div>
@@ -14,6 +20,14 @@ export function Welcome({ receiver, copy }: { receiver: string; copy: CopyText }
             </p>
             <div className="example">
                 <span>TRY IT IN YOUR TERMINAL</span>
+                <div className="segmented" role="group" aria-label="Example shell">
+                    <button aria-pressed={shell === 'powershell'} onClick={() => setShell('powershell')}>
+                        PowerShell
+                    </button>
+                    <button aria-pressed={shell === 'curl'} onClick={() => setShell('curl')}>
+                        curl (Bash / zsh)
+                    </button>
+                </div>
                 <code>{example}</code>
                 <button onClick={() => copy(example, 'Example')}>Copy example</button>
             </div>
