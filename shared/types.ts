@@ -19,3 +19,14 @@ export interface Snapshot {
     total: number;
     capacity: number;
 }
+
+export interface ReceiverSettings {
+    responseDelayMs: number;
+    getResponse: GetResponse;
+}
+
+export interface GetResponse {
+    readonly statusCode: number;
+    readonly contentType: string;
+    readonly body: string;
+}

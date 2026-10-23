@@ -1,63 +1,84 @@
 import { useEffect, useState } from 'react';
-import type { Snapshot } from '../../shared/types';
+
 import { API_ROUTES, REFRESH_EVENT } from '../../shared/constants';
+import type { Snapshot } from '../../shared/types';
+import { getRequestHistory } from '../api';
 import { EMPTY_SNAPSHOT, HISTORY_RETRY_MS } from '../constants';
 
-export function useRequestHistory(paused: boolean) {
+export function useRequestHistory(isPaused: boolean) {
     const [snapshot, setSnapshot] = useState<Snapshot>(EMPTY_SNAPSHOT);
-    const [connected, setConnected] = useState(false);
+    const [isConnected, setIsConnected] = useState(false);
     const [error, setError] = useState('');
     const [revision, setRevision] = useState(0);
 
-    //#region Live synchronization
     useEffect(() => {
-        if (paused) return;
-        let active = true;
-        let loading = false;
-        let dirty = false;
+        if (isPaused) {
+            return;
+        }
+
+        let isActive = true;
+        let isLoading = false;
+        let needsRefresh = false;
         const controller = new AbortController();
         const refresh = async () => {
-            dirty = true;
-            if (loading) return;
-            loading = true;
+            needsRefresh = true;
+            if (isLoading) {
+                return;
+            }
+
+            isLoading = true;
             try {
-                while (dirty && active) {
-                    dirty = false;
-                    const response = await fetch(API_ROUTES.requests, { signal: controller.signal, cache: 'no-store' });
-                    if (!response.ok) throw new Error('Unable to load request history. Retrying…');
-                    const next: Snapshot = await response.json();
-                    if (active) {
-                        setSnapshot(next);
-                        setError('');
+                while (needsRefresh && isActive) {
+                    needsRefresh = false;
+                    const next = await getRequestHistory(controller.signal);
+
+                    if (controller.signal.aborted) {
+                        return;
                     }
+
+                    setSnapshot(next);
+                    setError('');
                 }
             } catch (cause) {
-                if (active) setError(cause instanceof Error ? cause.message : 'Unable to load history');
+                if (isActive) {
+                    setError(cause instanceof Error ? cause.message : 'Unable to load history');
+                }
             } finally {
-                loading = false;
+                isLoading = false;
             }
         };
+
         const events = new EventSource(API_ROUTES.events);
-        events.onopen = () => setConnected(true);
-        events.onerror = () => setConnected(false);
-        events.addEventListener(REFRESH_EVENT, refresh);
+
+        events.onopen = () => {
+            setIsConnected(true);
+        };
+
+        events.onerror = () => {
+            setIsConnected(false);
+        };
+
+        const handleRefresh = () => {
+            void refresh();
+        };
+
+        events.addEventListener(REFRESH_EVENT, handleRefresh);
         void refresh();
-        const retry = window.setInterval(refresh, HISTORY_RETRY_MS);
+        const retry = window.setInterval(handleRefresh, HISTORY_RETRY_MS);
+
         return () => {
-            active = false;
+            isActive = false;
             controller.abort();
             events.close();
             clearInterval(retry);
-            setConnected(false);
+            setIsConnected(false);
         };
-    }, [paused, revision]);
-
-    //#endregion
+    }, [isPaused, revision]);
 
     function resetHistory() {
         setSnapshot(EMPTY_SNAPSHOT);
         setRevision((value) => value + 1);
     }
 
-    return { snapshot, connected, error, setError, resetHistory };
+    return { snapshot, isConnected, error, setError, resetHistory };
 }

@@ -1,146 +1,142 @@
-import { randomUUID } from 'node:crypto';
-import express, { type ErrorRequestHandler, type Response } from 'express';
-import type { CapturedRequest, Snapshot } from '../shared/types';
-import { API_ROUTES, CAPTURE_METHODS, DEFAULT_BODY_LIMIT, HISTORY_CAPACITY, LOOPBACK_HOST, REFRESH_EVENT } from '../shared/constants';
+import express, { type Express } from 'express';
 
-const BROADCAST_DELAY_MS = 80;
-const SSE_RETRY_MS = 1_500;
-const SSE_HEARTBEAT_MS = 15_000;
-const LOCAL_HOSTS = [LOOPBACK_HOST, 'localhost', '[::1]'];
-const REFRESH_NOTIFICATION = `event: ${REFRESH_EVENT}\ndata: {}\n\n`;
+import {
+    API_ROUTES,
+    CAPTURE_METHODS,
+    DEFAULT_BODY_LIMIT,
+    DEFAULT_GET_RESPONSE,
+    DEFAULT_RESPONSE_DELAY_MS,
+    HISTORY_CAPACITY,
+    MAX_RESPONSE_DELAY_MS,
+} from '../shared/constants';
+import type { GetResponse } from '../shared/types';
+import { isRecord, isResponseDelay, parseGetResponse } from '../shared/validation';
+import { captureRequest } from './captureRequest';
+import { handleRequestError, requireLocalAccess } from './middleware';
+import { createRequestEvents } from './requestEvents';
+import { createRequestHistory } from './requestHistory';
+import { createResponseScheduler } from './responseScheduler';
 
-interface Options {
-    bodyLimit?: string | number;
-    capacity?: number;
-    publicDir?: string;
+interface AppOptions {
+    readonly bodyLimit?: string | number;
+    readonly capacity?: number;
+    readonly publicDir?: string;
+    readonly responseDelayMs?: number;
+    readonly getResponse?: GetResponse;
 }
 
-export function createApp({ bodyLimit = DEFAULT_BODY_LIMIT, capacity = HISTORY_CAPACITY, publicDir }: Options = {}) {
+interface LocalHook {
+    readonly app: Express;
+    readonly close: () => void;
+}
+
+export function createApp({
+    bodyLimit = DEFAULT_BODY_LIMIT,
+    capacity = HISTORY_CAPACITY,
+    publicDir,
+    responseDelayMs = DEFAULT_RESPONSE_DELAY_MS,
+    getResponse: initialGetResponse = DEFAULT_GET_RESPONSE,
+}: AppOptions = {}): LocalHook {
+    if (!isResponseDelay(responseDelayMs)) {
+        throw new Error(`Response delay must be an integer from 0 to ${MAX_RESPONSE_DELAY_MS}`);
+    }
+
     const app = express();
-    const requests: CapturedRequest[] = [];
-    const clients = new Set<Response>();
-    let total = 0;
-    let pending: ReturnType<typeof setTimeout> | undefined;
+    const history = createRequestHistory(capacity);
+    const events = createRequestEvents();
+    const responses = createResponseScheduler();
+    let getResponse = parseGetResponse(initialGetResponse);
+
     app.disable('x-powered-by');
+    app.use(requireLocalAccess);
+    app.all(
+        API_ROUTES.receiver,
+        express.raw({ type: () => true, limit: bodyLimit, inflate: false }),
+        (req, res) => {
+            if (!CAPTURE_METHODS.some((method) => method === req.method)) {
+                res.setHeader('Allow', CAPTURE_METHODS.join(', '));
+                res.status(405).json({ error: `Use ${CAPTURE_METHODS.join(', ')}` });
 
-    //#region Local access
-    // Reject foreign browser origins and DNS-rebinding hosts. Non-browser webhook clients need no Origin header.
-    app.use((req, res, next) => {
-        if (!LOCAL_HOSTS.includes(req.hostname)) {
-            res.status(403).json({ error: 'Local hosts only' });
-            return;
-        }
-        const origin = req.get('origin');
-        if (req.path.startsWith('/api/') && origin && origin !== `${req.protocol}://${req.get('host')}`) {
-            res.status(403).json({ error: 'Same-origin requests only' });
-            return;
-        }
-        res.setHeader('X-Content-Type-Options', 'nosniff');
-        res.setHeader('Referrer-Policy', 'no-referrer');
-        res.setHeader('Content-Security-Policy', "default-src 'self'; connect-src 'self'; style-src 'self'; script-src 'self'; frame-ancestors 'none'; base-uri 'none'");
-        next();
+                return;
+            }
+
+            const capturedRequest = captureRequest(req);
+
+            history.add(capturedRequest);
+            events.notify();
+            responses.respond(res, {
+                requestId: capturedRequest.id,
+                delayMs: responseDelayMs,
+                getResponse: req.method === 'GET' ? getResponse : undefined,
+            });
+        },
+    );
+
+    app.get(API_ROUTES.settings, (_req, res) => {
+        res.setHeader('Cache-Control', 'no-store').json({ responseDelayMs, getResponse });
     });
 
-    //#endregion
+    app.put(API_ROUTES.settings, express.json({ limit: '512kb' }), (req, res) => {
+        const body: unknown = req.body;
 
-    //#region History and notifications
-    const snapshot = (): Snapshot => ({ requests, total, capacity });
-    // Invalidate in batches; clients fetch one bounded snapshot instead of queuing full payloads.
-    const broadcast = () => {
-        if (pending) return;
-        pending = setTimeout(() => {
-            pending = undefined;
-            for (const client of clients) {
-                if (!client.write(REFRESH_NOTIFICATION)) client.destroy();
-            }
-        }, BROADCAST_DELAY_MS);
-        pending.unref();
-    };
+        if (!isRecord(body) || (!('responseDelayMs' in body) && !('getResponse' in body))) {
+            res.status(400).json({ error: 'Provide a response delay or GET response settings' });
 
-    //#endregion
-
-    //#region Request capture
-    app.all(API_ROUTES.receiver, express.raw({ type: () => true, limit: bodyLimit, inflate: false }), (req, res) => {
-        if (!CAPTURE_METHODS.some((method) => method === req.method)) {
-            res.setHeader('Allow', CAPTURE_METHODS.join(', '));
-            res.status(405).json({ error: 'Use POST, PUT, or PATCH' });
             return;
         }
-        const body = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
-        const rawBody = body.toString('utf8');
-        const contentType = req.get('content-type') ?? '';
-        let jsonValid = false;
-        let parsedJson: unknown;
-        if (/(?:\/json|\+json)(?:\s*;|$)/i.test(contentType) && body.length) {
-            try {
-                parsedJson = JSON.parse(rawBody);
-                jsonValid = true;
-            } catch {
-                // Preserve malformed JSON as raw text.
-            }
+
+        if ('responseDelayMs' in body && !isResponseDelay(body.responseDelayMs)) {
+            res.status(400).json({
+                error: `Response delay must be an integer from 0 to ${MAX_RESPONSE_DELAY_MS} ms`,
+            });
+
+            return;
         }
-        const captured: CapturedRequest = {
-            id: randomUUID(),
-            timestamp: new Date().toISOString(),
-            method: req.method,
-            url: req.originalUrl,
-            query: [...new URL(req.originalUrl, 'http://localhost').searchParams],
-            headers: Object.fromEntries(Object.entries(req.headers).filter((entry): entry is [string, string | string[]] => entry[1] !== undefined)),
-            rawBody,
-            bodyBase64: body.toString('base64'),
-            jsonValid,
-            parsedJson,
-            contentType,
-            size: body.length,
-            remoteIp: req.socket.remoteAddress ?? '',
-        };
-        requests.unshift(captured);
-        if (requests.length > capacity) requests.pop();
-        total += 1;
-        broadcast();
-        res.json({ ok: true, id: captured.id });
+
+        let nextGetResponse = getResponse;
+
+        try {
+            if ('getResponse' in body) {
+                nextGetResponse = parseGetResponse(body.getResponse);
+            }
+        } catch (cause) {
+            res.status(400).json({
+                error: cause instanceof Error ? cause.message : 'Invalid GET response',
+            });
+
+            return;
+        }
+
+        if (isResponseDelay(body.responseDelayMs)) {
+            responseDelayMs = body.responseDelayMs;
+        }
+
+        getResponse = nextGetResponse;
+        res.json({ responseDelayMs, getResponse });
     });
 
-    //#endregion
+    app.get(API_ROUTES.requests, (_req, res) => {
+        res.setHeader('Cache-Control', 'no-store').json(history.snapshot());
+    });
 
-    //#region Dashboard API
-    app.get(API_ROUTES.requests, (_req, res) => res.setHeader('Cache-Control', 'no-store').json(snapshot()));
     app.delete(API_ROUTES.requests, (_req, res) => {
-        requests.length = 0;
-        total = 0;
-        broadcast();
+        history.clear();
+        events.notify();
         res.status(204).end();
     });
-    app.get(API_ROUTES.events, (req, res) => {
-        res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
-        res.write(`retry: ${SSE_RETRY_MS}\n${REFRESH_NOTIFICATION}`);
-        clients.add(res);
-        const heartbeat = setInterval(() => {
-            if (!res.write(': heartbeat\n\n')) res.destroy();
-        }, SSE_HEARTBEAT_MS);
-        heartbeat.unref();
-        req.on('close', () => {
-            clearInterval(heartbeat);
-            clients.delete(res);
-        });
-    });
 
-    //#endregion
+    app.get(API_ROUTES.events, events.subscribe);
 
-    //#region Static assets and errors
-    if (publicDir) app.use(express.static(publicDir, { etag: true }));
-    const onError: ErrorRequestHandler = (error, _req, res, _next) => {
-        const status = typeof error.status === 'number' && error.status >= 400 && error.status < 500 ? error.status : 500;
-        res.status(status).json({ error: status === 413 ? 'Request body exceeds the configured limit' : status === 415 ? 'Compressed bodies are not supported' : 'Unable to process request' });
-    };
-    app.use(onError);
-    //#endregion
+    if (publicDir) {
+        app.use(express.static(publicDir, { etag: true }));
+    }
 
-    return {
-        app,
-        close: () => {
-            if (pending) clearTimeout(pending);
-            for (const client of clients) client.destroy();
-        },
-    };
+    app.use(handleRequestError);
+
+    function close(): void {
+        responses.close();
+        events.close();
+    }
+
+    return { app, close };
 }

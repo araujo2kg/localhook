@@ -1,21 +1,42 @@
 import type { CopyText } from '../constants';
+import { GetResponseSettings } from './GetResponseSettings';
+import { ResponseDelay } from './ResponseDelay';
 
 interface Props {
-    connected: boolean;
-    paused: boolean;
-    clearing: boolean;
-    receiver: string;
-    onTogglePause: () => void;
-    onClear: () => Promise<void>;
-    copy: CopyText;
+    readonly isConnected: boolean;
+    readonly isPaused: boolean;
+    readonly isClearing: boolean;
+    readonly receiver: string;
+    readonly onTogglePause: () => void;
+    readonly onClear: () => Promise<void>;
+    readonly copyText: CopyText;
 }
 
-export function DashboardHeader({ connected, paused, clearing, receiver, onTogglePause, onClear, copy }: Props) {
+export function DashboardHeader({
+    isConnected,
+    isPaused,
+    isClearing,
+    receiver,
+    onTogglePause,
+    onClear,
+    copyText,
+}: Props) {
+    let statusLabel = 'Reconnecting...';
+
+    if (isPaused) {
+        statusLabel = 'Paused';
+    } else if (isConnected) {
+        statusLabel = 'Listening';
+    }
+
     return (
         <>
             <header className="header">
                 <div className="brand">
-                    <span className="logo" aria-hidden="true">
+                    <span
+                        className="logo"
+                        aria-hidden="true"
+                    >
                         ↳
                     </span>
                     <div>
@@ -23,24 +44,45 @@ export function DashboardHeader({ connected, paused, clearing, receiver, onToggl
                         <span className="subtitle">LOCAL REQUEST INSPECTOR</span>
                     </div>
                 </div>
-                <div className={`status ${connected ? 'online' : ''}`}>
+                <div className={`status ${isConnected ? 'online' : ''}`}>
                     <span className="dot" />
-                    {paused ? 'Paused' : connected ? 'Listening' : 'Reconnecting…'}
+                    {statusLabel}
                 </div>
                 <div className="header-actions">
-                    <button onClick={() => onTogglePause()}>{paused ? '▶ Resume' : 'Ⅱ Pause'}</button>
-                    <button disabled={clearing} onClick={onClear}>
-                        {clearing ? 'Clearing…' : 'Clear history'}
+                    <button onClick={onTogglePause}>{isPaused ? '▶ Resume' : 'Ⅱ Pause'}</button>
+                    <button
+                        disabled={isClearing}
+                        onClick={() => {
+                            void onClear();
+                        }}
+                    >
+                        {isClearing ? 'Clearing…' : 'Clear history'}
                     </button>
                 </div>
             </header>
-            <section className="receiver" aria-label="Webhook receiver">
+            <section
+                className="receiver"
+                aria-label="Webhook receiver"
+            >
                 <span className="eyebrow">SEND REQUESTS TO</span>
                 <code>{receiver}</code>
-                <button className="accent" onClick={() => copy(receiver, 'Receiver URL')}>
+                <button
+                    className="accent"
+                    onClick={() => {
+                        void copyText(receiver, 'Receiver URL');
+                    }}
+                >
                     Copy URL
                 </button>
                 <span className="local-tag">↗ Localhost only</span>
+                <div
+                    className="response-settings"
+                    role="group"
+                    aria-label="Receiver response settings"
+                >
+                    <ResponseDelay />
+                    <GetResponseSettings />
+                </div>
             </section>
         </>
     );

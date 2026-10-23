@@ -1,45 +1,91 @@
-import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import {
+    type CSSProperties,
+    type FocusEvent,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import { createPortal } from 'react-dom';
+
 import type { CapturedRequest } from '../../shared/types';
-import { formatTime, JSON_INDENT_SPACES } from '../format';
+import { formatRequestBody, formatTime } from '../format';
+import {
+    getPreviewPlacement,
+    type PreviewPlacement,
+    type PreviewPosition,
+} from '../previewPosition';
 import { Method, RequestIdentifier } from './RequestPrimitives';
-import type { PreviewPosition } from '../hooks/useRequestPreview';
 
 interface Props {
-    request: CapturedRequest;
-    position: PreviewPosition;
-    onEnter: () => void;
-    onLeave: () => void;
-    onClose: () => void;
+    readonly request: CapturedRequest;
+    readonly position: PreviewPosition;
+    readonly onEnter: () => void;
+    readonly onLeave: () => void;
+    readonly onClose: () => void;
+}
+
+interface PreviewStyle extends CSSProperties {
+    '--pointer-top': string;
 }
 
 export function RequestHoverPreview({ request, position, onEnter, onLeave, onClose }: Props) {
-    const body = useMemo(() => (request.jsonValid ? JSON.stringify(JSON.parse(request.rawBody), null, JSON_INDENT_SPACES) : request.rawBody), [request]);
+    let bodyLabel = 'Empty body';
+
+    if (request.jsonValid) {
+        bodyLabel = 'Formatted JSON';
+    } else if (request.size > 0) {
+        bodyLabel = 'Original UTF-8 payload';
+    }
+
+    const body = useMemo(() => formatRequestBody(request), [request]);
     const panel = useRef<HTMLElement>(null);
-    const [placement, setPlacement] = useState({ top: position.top, pointerTop: 18 });
+    const [placement, setPlacement] = useState<PreviewPlacement>(() =>
+        getPreviewPlacement(position, position.maxHeight, window.innerHeight),
+    );
+
     useLayoutEffect(() => {
-        if (!panel.current) return;
+        if (!panel.current) {
+            return;
+        }
+
         const height = panel.current.getBoundingClientRect().height;
-        const top = Math.max(12, Math.min(position.anchorTop - height + 22, window.innerHeight - height - 12));
-        setPlacement({ top, pointerTop: Math.max(18, Math.min(position.anchorTop - top, height - 18)) });
+
+        setPlacement(getPreviewPlacement(position, height, window.innerHeight));
     }, [position, body]);
+
+    const previewStyle: PreviewStyle = {
+        left: position.left,
+        width: position.width,
+        maxHeight: position.maxHeight,
+        top: placement.top,
+        '--pointer-top': `${placement.pointerTop}px`,
+    };
+
+    function handleBlur(event: FocusEvent<HTMLElement>): void {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+            onLeave();
+        }
+    }
+
     return createPortal(
         <section
             ref={panel}
-            className={`request-hover-preview ${position.showPointer ? 'preview-balloon' : ''}`}
-            style={{ left: position.left, width: position.width, maxHeight: position.maxHeight, top: placement.top, '--pointer-top': `${placement.pointerTop}px` } as CSSProperties}
+            className={`request-hover-preview ${position.hasPointer ? 'preview-balloon' : ''}`}
+            style={previewStyle}
             role="region"
             aria-label="Request body preview"
             onPointerEnter={onEnter}
             onPointerLeave={onLeave}
             onFocus={onEnter}
-            onBlur={(event) => {
-                if (!event.currentTarget.contains(event.relatedTarget)) onLeave();
-            }}
+            onBlur={handleBlur}
         >
             <header className="preview-heading">
                 <span className="eyebrow">BODY PREVIEW</span>
-                <button aria-label="Close body preview" onClick={onClose}>
+                <button
+                    aria-label="Close body preview"
+                    onClick={onClose}
+                >
                     ×
                 </button>
             </header>
@@ -49,7 +95,11 @@ export function RequestHoverPreview({ request, position, onEnter, onLeave, onClo
                 <strong title={request.url}>{request.url}</strong>
                 <time dateTime={request.timestamp}>{formatTime(request.timestamp)}</time>
             </div>
-            <div className="preview-body" tabIndex={0} aria-label="Preview body">
+            <div
+                className="preview-body"
+                tabIndex={0}
+                aria-label="Preview body"
+            >
                 {request.size ? (
                     <pre>
                         <code>{body}</code>
@@ -59,7 +109,7 @@ export function RequestHoverPreview({ request, position, onEnter, onLeave, onClo
                 )}
             </div>
             <footer>
-                {request.jsonValid ? 'Formatted JSON' : request.size ? 'Original UTF-8 payload' : 'Empty body'}
+                {bodyLabel}
                 <span>Esc to dismiss</span>
             </footer>
         </section>,
