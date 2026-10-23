@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { API_ROUTES, CAPTURE_METHODS, LOOPBACK_HOST } from '../shared/constants';
 import { NOTICE_DURATION_MS } from './constants';
 import { DashboardHeader } from './components/DashboardHeader';
+import { ResponseDelay } from './components/ResponseDelay';
 import { RequestSidebar } from './components/RequestSidebar';
 import { RequestDetails } from './components/RequestDetails';
 import { useRequestHistory } from './hooks/useRequestHistory';
@@ -65,6 +66,7 @@ function App() {
     return (
         <div className="app">
             <DashboardHeader connected={connected} paused={paused} clearing={clearing} receiver={receiver} onTogglePause={() => setPaused((value) => !value)} onClear={clearHistory} copy={copy} />
+            <ResponseDelay />
             {error && (
                 <div className="banner" role="alert">
                     {error}
@@ -81,7 +83,7 @@ function App() {
                     <span className="footer-dot" /> 127.0.0.1 · Private workspace
                 </span>
                 <span>
-                    POST · PUT · PATCH<span className="footer-divider">|</span>History resets on restart
+                    GET · POST · PUT · PATCH<span className="footer-divider">|</span>History resets on restart
                 </span>
             </footer>
             {notice && (

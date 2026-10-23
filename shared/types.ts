@@ -19,3 +19,7 @@ export interface Snapshot {
     total: number;
     capacity: number;
 }
+
+export interface ReceiverSettings {
+    responseDelayMs: number;
+}
