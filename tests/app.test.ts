@@ -62,6 +62,37 @@ async function capturedAt(index = 0) {
 }
 
 void test(
+    'incoming GET requests appear in history with query metadata and the default response',
+    { timeout: 10_000 },
+    async () => {
+        const capturedIds = new Set<string>();
+
+        for (let attempt = 0; attempt < 2; attempt++) {
+            const response = await fetch(`${base}/webhook?source=get-test&key=one&key=two`);
+            const acknowledgment: unknown = await response.json();
+            const request = await capturedAt();
+
+            assert.equal(response.status, 200);
+            assert.match(response.headers.get('content-type') ?? '', /^application\/json/);
+            assert.equal(response.headers.get('cache-control'), 'no-store');
+            assert.deepEqual(acknowledgment, { ok: true });
+            assert.equal(request.method, 'GET');
+            assert.equal(request.rawBody, '');
+            assert.equal(request.size, 0);
+            assert.deepEqual(request.query, [
+                ['source', 'get-test'],
+                ['key', 'one'],
+                ['key', 'two'],
+            ]);
+
+            capturedIds.add(request.id);
+        }
+
+        assert.equal(capturedIds.size, 2);
+    },
+);
+
+void test(
     'captures JSON, metadata, repeated query values, and headers',
     { timeout: 10_000 },
     async () => {

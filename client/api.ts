@@ -1,5 +1,5 @@
 import { API_ROUTES } from '../shared/constants';
-import type { ReceiverSettings, Snapshot } from '../shared/types';
+import type { GetResponse, ReceiverSettings, Snapshot } from '../shared/types';
 import { parseReceiverSettings, parseSnapshot } from '../shared/validation';
 
 async function fetchResponse(path: string, options: RequestInit): Promise<Response> {
@@ -47,4 +47,18 @@ export async function getRequestHistory(signal: AbortSignal): Promise<Snapshot> 
 
 export async function clearRequestHistory(): Promise<void> {
     await fetchResponse(API_ROUTES.requests, { method: 'DELETE' });
+}
+
+export async function updateGetResponse(
+    getResponse: GetResponse,
+    signal: AbortSignal,
+): Promise<ReceiverSettings> {
+    const value = await fetchJson(API_ROUTES.settings, {
+        method: 'PUT',
+        signal,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ getResponse }),
+    });
+
+    return parseReceiverSettings(value);
 }

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
+import { DEFAULT_GET_RESPONSE } from '../shared/constants';
 import type { CapturedRequest } from '../shared/types';
 import { parseReceiverSettings, parseSnapshot } from '../shared/validation';
 
@@ -24,10 +25,18 @@ const CAPTURED_REQUEST: CapturedRequest = {
 };
 
 void test('accepts receiver delay boundaries and rejects malformed API settings', () => {
-    assert.deepEqual(parseReceiverSettings({ responseDelayMs: 0 }), { responseDelayMs: 0 });
-    assert.deepEqual(parseReceiverSettings({ responseDelayMs: 3_600_000 }), {
-        responseDelayMs: 3_600_000,
-    });
+    assert.deepEqual(
+        parseReceiverSettings({ responseDelayMs: 0, getResponse: DEFAULT_GET_RESPONSE }),
+        { responseDelayMs: 0, getResponse: DEFAULT_GET_RESPONSE },
+    );
+
+    assert.deepEqual(
+        parseReceiverSettings({ responseDelayMs: 3_600_000, getResponse: DEFAULT_GET_RESPONSE }),
+        {
+            responseDelayMs: 3_600_000,
+            getResponse: DEFAULT_GET_RESPONSE,
+        },
+    );
 
     for (const responseDelayMs of [-1, 0.5, 3_600_001, '100', null, true]) {
         assert.throws(

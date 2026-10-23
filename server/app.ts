@@ -4,11 +4,13 @@ import {
     API_ROUTES,
     CAPTURE_METHODS,
     DEFAULT_BODY_LIMIT,
+    DEFAULT_GET_RESPONSE,
     DEFAULT_RESPONSE_DELAY_MS,
     HISTORY_CAPACITY,
     MAX_RESPONSE_DELAY_MS,
 } from '../shared/constants';
-import { isRecord, isResponseDelay } from '../shared/validation';
+import type { GetResponse } from '../shared/types';
+import { isRecord, isResponseDelay, parseGetResponse } from '../shared/validation';
 import { captureRequest } from './captureRequest';
 import { handleRequestError, requireLocalAccess } from './middleware';
 import { createRequestEvents } from './requestEvents';
@@ -20,6 +22,7 @@ interface AppOptions {
     readonly capacity?: number;
     readonly publicDir?: string;
     readonly responseDelayMs?: number;
+    readonly getResponse?: GetResponse;
 }
 
 interface LocalHook {
@@ -32,6 +35,7 @@ export function createApp({
     capacity = HISTORY_CAPACITY,
     publicDir,
     responseDelayMs = DEFAULT_RESPONSE_DELAY_MS,
+    getResponse: initialGetResponse = DEFAULT_GET_RESPONSE,
 }: AppOptions = {}): LocalHook {
     if (!isResponseDelay(responseDelayMs)) {
         throw new Error(`Response delay must be an integer from 0 to ${MAX_RESPONSE_DELAY_MS}`);
@@ -41,6 +45,7 @@ export function createApp({
     const history = createRequestHistory(capacity);
     const events = createRequestEvents();
     const responses = createResponseScheduler();
+    let getResponse = parseGetResponse(initialGetResponse);
 
     app.disable('x-powered-by');
     app.use(requireLocalAccess);
@@ -59,18 +64,28 @@ export function createApp({
 
             history.add(capturedRequest);
             events.notify();
-            responses.respond(res, capturedRequest.id, responseDelayMs);
+            responses.respond(res, {
+                requestId: capturedRequest.id,
+                delayMs: responseDelayMs,
+                getResponse: req.method === 'GET' ? getResponse : undefined,
+            });
         },
     );
 
     app.get(API_ROUTES.settings, (_req, res) => {
-        res.setHeader('Cache-Control', 'no-store').json({ responseDelayMs });
+        res.setHeader('Cache-Control', 'no-store').json({ responseDelayMs, getResponse });
     });
 
-    app.put(API_ROUTES.settings, express.json({ limit: '1kb' }), (req, res) => {
+    app.put(API_ROUTES.settings, express.json({ limit: '512kb' }), (req, res) => {
         const body: unknown = req.body;
 
-        if (!isRecord(body) || !isResponseDelay(body.responseDelayMs)) {
+        if (!isRecord(body) || (!('responseDelayMs' in body) && !('getResponse' in body))) {
+            res.status(400).json({ error: 'Provide a response delay or GET response settings' });
+
+            return;
+        }
+
+        if ('responseDelayMs' in body && !isResponseDelay(body.responseDelayMs)) {
             res.status(400).json({
                 error: `Response delay must be an integer from 0 to ${MAX_RESPONSE_DELAY_MS} ms`,
             });
@@ -78,8 +93,26 @@ export function createApp({
             return;
         }
 
-        responseDelayMs = body.responseDelayMs;
-        res.json({ responseDelayMs });
+        let nextGetResponse = getResponse;
+
+        try {
+            if ('getResponse' in body) {
+                nextGetResponse = parseGetResponse(body.getResponse);
+            }
+        } catch (cause) {
+            res.status(400).json({
+                error: cause instanceof Error ? cause.message : 'Invalid GET response',
+            });
+
+            return;
+        }
+
+        if (isResponseDelay(body.responseDelayMs)) {
+            responseDelayMs = body.responseDelayMs;
+        }
+
+        getResponse = nextGetResponse;
+        res.json({ responseDelayMs, getResponse });
     });
 
     app.get(API_ROUTES.requests, (_req, res) => {

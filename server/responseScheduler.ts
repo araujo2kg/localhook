@@ -1,16 +1,47 @@
 import type { Response } from 'express';
 
+import type { GetResponse } from '../shared/types';
+
+interface ResponseOptions {
+    readonly requestId: string;
+    readonly delayMs: number;
+    readonly getResponse?: GetResponse;
+}
+
 export interface ResponseScheduler {
-    respond: (response: Response, requestId: string, delayMs: number) => void;
+    respond: (response: Response, options: ResponseOptions) => void;
     close: () => void;
 }
 
 export function createResponseScheduler(): ResponseScheduler {
     const pendingResponses = new Map<Response, ReturnType<typeof setTimeout>>();
 
-    function respond(response: Response, requestId: string, delayMs: number): void {
-        if (delayMs === 0) {
+    function respond(
+        response: Response,
+        { requestId, delayMs, getResponse }: ResponseOptions,
+    ): void {
+        response.setHeader('Cache-Control', 'no-store');
+
+        function sendResponse(): void {
+            if (response.destroyed) {
+                return;
+            }
+
+            if (getResponse) {
+                response
+                    .status(getResponse.statusCode)
+                    .setHeader('Content-Type', getResponse.contentType);
+
+                response.end(getResponse.body);
+
+                return;
+            }
+
             response.json({ ok: true, id: requestId });
+        }
+
+        if (delayMs === 0) {
+            sendResponse();
 
             return;
         }
@@ -25,9 +56,7 @@ export function createResponseScheduler(): ResponseScheduler {
         const timer = setTimeout(() => {
             cleanup();
 
-            if (!response.destroyed) {
-                response.json({ ok: true, id: requestId });
-            }
+            sendResponse();
         }, delayMs);
 
         timer.unref();

@@ -2,6 +2,12 @@ export const DEFAULT_PORT = 17381;
 export const DEFAULT_BODY_LIMIT = '1mb';
 export const DEFAULT_RESPONSE_DELAY_MS = 0;
 export const MAX_RESPONSE_DELAY_MS = 3_600_000;
+export const MAX_GET_RESPONSE_BYTES = 65_536;
+export const DEFAULT_GET_RESPONSE = {
+    statusCode: 200,
+    contentType: 'application/json',
+    body: '{"ok":true}',
+} as const;
 export const HISTORY_CAPACITY = 500;
 export const LOOPBACK_HOST = '127.0.0.1';
 export const API_ROUTES = {

@@ -4,6 +4,7 @@ import { test, type TestContext } from 'node:test';
 import { setTimeout as sleep } from 'node:timers/promises';
 
 import { createApp } from '../server/app';
+import { DEFAULT_GET_RESPONSE } from '../shared/constants';
 import type { Snapshot } from '../shared/types';
 import { isRecord, parseSnapshot } from '../shared/validation';
 
@@ -89,9 +90,14 @@ void test(
         });
 
         assert.equal(update.status, 200);
-        assert.deepEqual(await update.json(), { responseDelayMs: 0 });
+        assert.deepEqual(await update.json(), {
+            responseDelayMs: 0,
+            getResponse: DEFAULT_GET_RESPONSE,
+        });
+
         assert.deepEqual(await (await fetch(`${base}/api/settings`)).json(), {
             responseDelayMs: 0,
+            getResponse: DEFAULT_GET_RESPONSE,
         });
 
         // A new request responds while the original requests are still waiting.
@@ -163,6 +169,7 @@ void test(
 
         assert.deepEqual(await (await fetch(`${base}/api/settings`)).json(), {
             responseDelayMs: 25,
+            getResponse: DEFAULT_GET_RESPONSE,
         });
     },
 );
