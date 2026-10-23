@@ -2,6 +2,17 @@
     "singleQuote": true,
     "trailingComma": "all",
     "tabWidth": 4,
-    "printWidth": 300,
-    "endOfLine": "lf"
+    "printWidth": 100,
+    "useTabs": false,
+    "semi": true,
+    "quoteProps": "as-needed",
+    "jsxSingleQuote": false,
+    "bracketSpacing": true,
+    "bracketSameLine": false,
+    "arrowParens": "always",
+    "singleAttributePerLine": true,
+    "objectWrap": "preserve",
+    "endOfLine": "lf",
+    "proseWrap": "always",
+    "embeddedLanguageFormatting": "auto"
 }

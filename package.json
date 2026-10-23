@@ -6,13 +6,17 @@
     "license": "MIT",
     "type": "module",
     "engines": {
-        "node": ">=22"
+        "node": ">=22.13.0"
     },
     "scripts": {
         "dev": "node scripts/build.mjs --watch",
         "build": "tsc --noEmit && node scripts/build.mjs",
         "start": "node dist/server.js",
         "test": "tsx --test tests/*.test.ts",
+        "typecheck": "tsc --noEmit",
+        "lint": "eslint . --max-warnings 0",
+        "lint:fix": "eslint . --fix --max-warnings 0",
+        "check": "npm run format:check && npm run lint && npm run build && npm test",
         "format": "prettier --write .",
         "format:check": "prettier --check ."
     },
@@ -22,13 +26,21 @@
         "react-dom": "^19.3.1"
     },
     "devDependencies": {
+        "@eslint/js": "10.0.1",
+        "@stylistic/eslint-plugin": "5.10.0",
         "@types/express": "^5.0.6",
         "@types/node": "^26.6.5",
         "@types/react": "^19.3.0",
         "@types/react-dom": "^19.3.0",
         "esbuild": "^0.28.2",
+        "eslint": "10.13.0",
+        "eslint-config-prettier": "10.1.8",
+        "eslint-plugin-react-hooks": "7.1.1",
+        "eslint-plugin-simple-import-sort": "14.0.0",
+        "globals": "17.13.0",
         "prettier": "^3.9.10",
         "tsx": "^4.23.15",
-        "typescript": "^7.0.2"
+        "typescript": "6.0.3",
+        "typescript-eslint": "8.72.0"
     }
 }

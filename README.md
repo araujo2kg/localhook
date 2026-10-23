@@ -5,7 +5,7 @@ inspect headers, query parameters, and payloads as they arrive.
 
 ## Getting started
 
-Requires **Node.js 22+** and npm.
+Requires **Node.js 22.13.0+** and npm.
 
 ```sh
 npm install
