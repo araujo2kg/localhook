@@ -14,9 +14,11 @@ export const DETAIL_TABS = [
 export type DetailTab = (typeof DETAIL_TABS)[number]['id'];
 export type CopyText = (value: string, label: string) => Promise<void>;
 
+export const DEFAULT_DIVIDER_COLOR = '#dfb76f';
+
 export const DIVIDER_COLORS = [
     { name: 'Blue', value: '#80b7f1' },
     { name: 'Teal', value: '#75cbbb' },
     { name: 'Purple', value: '#b6a0e8' },
-    { name: 'Amber', value: '#dfb76f' },
+    { name: 'Amber', value: DEFAULT_DIVIDER_COLOR },
 ] as const;

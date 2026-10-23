@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import type { Snapshot } from '../../shared/types';
-import { DIVIDER_COLORS } from '../constants';
+import { DEFAULT_DIVIDER_COLOR } from '../constants';
 
 export interface RequestDivider {
     readonly id: string;
@@ -35,7 +35,7 @@ export function useTimelineDividers(snapshot: Snapshot) {
             id: crypto.randomUUID(),
             beforeId: snapshot.requests[0]?.id ?? null,
             label: '',
-            color: DIVIDER_COLORS[0].value,
+            color: DEFAULT_DIVIDER_COLOR,
         };
 
         setDividers((currentDividers) => [divider, ...currentDividers]);
