@@ -2,7 +2,6 @@ import { useDashboard } from '../hooks/useDashboard';
 import { DashboardHeader } from './DashboardHeader';
 import { RequestDetails } from './RequestDetails';
 import { RequestSidebar } from './RequestSidebar';
-import { ResponseDelay } from './ResponseDelay';
 
 export function Dashboard() {
     const {
@@ -36,7 +35,6 @@ export function Dashboard() {
                 onClear={handleClearHistory}
                 copyText={copyText}
             />
-            <ResponseDelay />
             {error && (
                 <div
                     className="banner"

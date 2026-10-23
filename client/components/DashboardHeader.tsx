@@ -1,4 +1,6 @@
 import type { CopyText } from '../constants';
+import { GetResponseSettings } from './GetResponseSettings';
+import { ResponseDelay } from './ResponseDelay';
 
 interface Props {
     readonly isConnected: boolean;
@@ -73,6 +75,14 @@ export function DashboardHeader({
                     Copy URL
                 </button>
                 <span className="local-tag">↗ Localhost only</span>
+                <div
+                    className="response-settings"
+                    role="group"
+                    aria-label="Receiver response settings"
+                >
+                    <ResponseDelay />
+                    <GetResponseSettings />
+                </div>
             </section>
         </>
     );
